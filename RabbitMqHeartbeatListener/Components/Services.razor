@@ -1,0 +1,125 @@
+﻿@using RabbitMqHeartbeatListener.Data
+@rendermode InteractiveServer
+@inject ServiceRepository serviceRepo
+@inject EventBus eventBus
+@inject ILogger<Services> logger;
+
+<div class="services-bg">
+<div class="services-content">
+
+    <h1 class="page-heading">Service Monitoring</h1>
+
+    <div style="margin-top:32px;margin-bottom:16px;display:flex;flex-direction:row;gap:6px;">
+        <input @bind="newServiceAppId" class="form-control" placeholder="App ID" />
+        <input @bind="newServiceName" class="form-control" placeholder="Service Name" />
+        <button type="button" @onclick="CreateService" class="btn btn-primary" style="white-space:nowrap">Add Service</button>
+    </div>
+
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th style="min-width:200px">ID</th>
+                <th style="min-width:200px">Service Name</th>
+                <th style="min-width:200px">Last Heartbeat</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if(services.Count > 0) {
+            @foreach (var service in services)
+            {
+                <tr>
+                    <td>@service.AppId</td>
+                    <td>@service.Name</td>
+                    <td>@service.LastHeartbeatTime</td>
+                    <td><button @onclick="() => DeleteService(service)">Delete</button></td>
+                </tr>
+                }
+            }
+            else
+            {
+                <tr><td colspan="3" style="padding:16px;">No monitored services. Use the form above to add one.</td></tr>
+            }
+        </tbody>
+    </table>
+</div>
+</div>
+
+@code {
+    private HashSet<Service> services = [];
+    private string? newServiceAppId;
+    private string? newServiceName;
+
+    protected override void OnInitialized()
+    {
+        logger.LogDebug("Services initializing");
+
+        // Subscribe to events
+        eventBus.ServiceAdded += OnServiceEvent;
+        eventBus.ServiceUpdated += OnServiceEvent;
+        eventBus.ServiceDeleted += OnServiceEvent;
+
+        services = GetServices();
+        logger.LogDebug("Services initialized");
+
+    }
+
+    private HashSet<Service> GetServices() {
+        return serviceRepo.GetServices().ToHashSet();
+    }
+
+    private void OnServiceEvent(object? sender, EventArgs e)
+    {
+        // Reload the service list
+        services = GetServices();
+        InvokeAsync(StateHasChanged);
+    }
+
+
+    void DeleteService(Service service)
+    {
+        if (services.Contains(service) is false)
+            return;
+
+        serviceRepo.DeleteService(service.AppId);
+        services.Remove(service);
+        StateHasChanged();
+    }
+
+    public void CreateService()
+    {
+        logger.LogInformation("CreateService method invoked");
+
+        if (string.IsNullOrWhiteSpace(newServiceAppId))
+        {
+            logger.LogWarning("Cannot create server. App Id is empty.");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(newServiceName))
+        {
+            logger.LogWarning("Cannot create server. App name is empty.");
+            return;
+        }
+
+        logger.LogInformation("Creating service");
+        serviceRepo.AddService(newServiceAppId, newServiceName);
+        var newService = new Service(newServiceAppId, newServiceName);
+        services.Add(newService);
+
+        // Clear the input fields after adding the service
+        newServiceAppId = string.Empty;
+        newServiceName = string.Empty;
+
+        // Trigger re-render
+        StateHasChanged();
+    }
+
+
+    public void Dispose()
+    {
+        // Unsubscribe from events when the component is disposed
+        eventBus.ServiceAdded -= OnServiceEvent;
+        eventBus.ServiceUpdated -= OnServiceEvent;
+        eventBus.ServiceDeleted -= OnServiceEvent;
+    }
+}

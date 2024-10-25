@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.10.35122.118
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RabbitMqHeartbeatListener", "RabbitMqHeartbeatListener\RabbitMqHeartbeatListener.csproj", "{912BAE97-FD3A-41EC-865C-F1211C4ADFB0}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{912BAE97-FD3A-41EC-865C-F1211C4ADFB0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{912BAE97-FD3A-41EC-865C-F1211C4ADFB0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{912BAE97-FD3A-41EC-865C-F1211C4ADFB0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{912BAE97-FD3A-41EC-865C-F1211C4ADFB0}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {9A14D56F-2CA6-46C5-B536-41A1D5EBA674}
+	EndGlobalSection
+EndGlobal

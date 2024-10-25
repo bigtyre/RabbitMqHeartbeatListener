@@ -1,0 +1,14 @@
+﻿@inject ILogger<TestComponent> logger;
+@rendermode InteractiveServer
+
+<h3>TestComponent</h3>
+
+<button type="button" @onclick="TestButtonClick" class="btn btn-primary">Test Button 22</button>
+
+@code {
+    private void TestButtonClick()
+    {
+        logger.LogInformation("Test button clicked");
+    }
+
+}
