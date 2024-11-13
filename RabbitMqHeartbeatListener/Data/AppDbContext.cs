@@ -8,7 +8,7 @@ namespace RabbitMqHeartbeatListener.Data
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseSqlite("Data Source=/var/lib/services.db");
+            optionsBuilder.UseSqlite("Data Source=/data/services.db");
         }
     }
 }
