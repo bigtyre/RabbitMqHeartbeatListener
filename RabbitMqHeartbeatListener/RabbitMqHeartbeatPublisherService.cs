@@ -16,7 +16,7 @@ public class RabbitMqHeartbeatPublisherService(
 
             while (!stoppingToken.IsCancellationRequested)
             {
-                logger.LogTrace("Publishing heartbeat message");
+               // logger.LogTrace("Publishing heartbeat message");
 
                 await messagePublisher.PublishJsonMessageAsync(
                     "heartbeats",

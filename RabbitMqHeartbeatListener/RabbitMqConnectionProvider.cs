@@ -30,10 +30,10 @@ namespace RabbitMqHeartbeatListener
             if (model is null)
             {
                 logger.LogWarning("Create Channel returned a null value.");
-                return model;
+                throw new Exception("Create Channel returned a null value.");
             }
 
-            logger.LogDebug($"RabbitMQ channel created: {uid}");
+            logger.LogDebug("RabbitMQ channel created: {uid}", uid);
 
             model.ModelShutdown += (sender, e) => Model_ModelShutdown(e, uid);
 
@@ -43,7 +43,7 @@ namespace RabbitMqHeartbeatListener
         private void Model_ModelShutdown(ShutdownEventArgs e, Guid channelId)
         {
             var reason = e.ReplyText;
-            logger.LogDebug($"RabbitMQ channel shutdown {channelId}: {reason}");
+            logger.LogDebug("RabbitMQ channel shutdown {channelId}: {reason}", channelId, reason);
         }
 
         private async Task<IConnection> GetOrCreateConnectionAsync()
@@ -103,25 +103,25 @@ namespace RabbitMqHeartbeatListener
             });
         }
 
-        private void CallbackException(object sender, CallbackExceptionEventArgs e)
+        private void CallbackException(object? sender, CallbackExceptionEventArgs e)
         {
             logger.LogInformation($"RabbitMQ connection callback exception.");
         }
 
-        private void ConnectionBlocked(object sender, RabbitMQ.Client.Events.ConnectionBlockedEventArgs e)
+        private void ConnectionBlocked(object? sender, ConnectionBlockedEventArgs e)
         {
-            logger.LogInformation($"RabbitMQ connection blocked: {e.Reason}");
+            logger.LogInformation("RabbitMQ connection blocked: {reason}", e.Reason);
         }
 
-        private void ConnectionUnblocked(object sender, EventArgs e)
+        private void ConnectionUnblocked(object? sender, EventArgs e)
         {
             logger.LogInformation($"RabbitMQ connection unblocked.");
         }
 
-        private void HandleConnectionShutdown(object sender, ShutdownEventArgs e)
+        private void HandleConnectionShutdown(object? sender, ShutdownEventArgs e)
         {
             var cause = e.ReplyText;
-            logger.LogInformation($"RabbitMQ connection shutdown. {cause}");
+            logger.LogInformation("RabbitMQ connection shutdown. {cause}", cause);
         }
 
         private IConnection CreateConnection()
@@ -137,40 +137,40 @@ namespace RabbitMqHeartbeatListener
             }
             catch (AuthenticationFailureException ex)
             {
-                logger.LogError("RabbitMQ authentication failed: " + ex.Message, ex);
+                logger.LogError(ex, "RabbitMQ authentication failed: {errorMessage}", ex.Message);
                 throw;
             }
             catch (PossibleAuthenticationFailureException ex)
             {
-                logger.LogError("RabbitMQ connection failed due, possibly due to authentication: " + ex.Message, ex);
+                logger.LogError(ex, "RabbitMQ connection failed due, possibly due to authentication: {errorMessage} ", ex.Message);
                 throw;
             }
             catch (ProtocolVersionMismatchException ex)
             {
-                logger.LogError("RabbitMQ connection failed due to protocol version mismatch: " + ex.Message, ex);
+                logger.LogError(ex, "RabbitMQ connection failed due to protocol version mismatch: {errorMessage}", ex.Message);
                 throw;
             }
             catch (BrokerUnreachableException ex)
                 when (ex.InnerException is OperationInterruptedException e && e.ShutdownReason.ReplyCode == 530)
             {
-                logger.LogError("RabbitMQ connection failed. User does not have permission to access this vhost.", ex);
+                logger.LogError(ex, "RabbitMQ connection failed. User does not have permission to access this vhost.");
                 throw;
             }
             catch (BrokerUnreachableException ex)
                 when (ex.InnerException is OperationInterruptedException e && e.ShutdownReason.ReplyCode == 530)
             {
-                logger.LogError(ex.Message, ex);
+                logger.LogError(ex, "Brocker unreachable: {errorMessage}", ex.Message);
                 throw;
                 //await Task.Delay(500, stoppingToken).ConfigureAwait(false);
             }
             catch (ConnectFailureException ex)
             {
-                logger.LogError("Connection failed", ex);
+                logger.LogError(ex, "Connection failed");
                 throw;
             }
             catch (Exception ex)
             {
-                logger.LogError("Failed to create RabbitMQ connection: " + ex.Message, ex);
+                logger.LogError(ex, "Failed to create RabbitMQ connection: {errorMessage}", ex.Message);
                 throw;
             }
 

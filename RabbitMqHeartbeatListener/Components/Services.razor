@@ -3,51 +3,53 @@
 @inject ServiceRepository serviceRepo
 @inject EventBus eventBus
 @inject ILogger<Services> logger;
+@inject IJSRuntime JSRuntime;
 
 <div class="services-bg">
-<div class="services-content">
+    <div class="services-content">
 
-    <h1 class="page-heading">Service Monitoring</h1>
+        <h1 class="page-heading">Service Monitoring</h1>
 
-    <div style="margin-top:32px;margin-bottom:16px;display:flex;flex-direction:row;gap:6px;">
-        <input @bind="newServiceAppId" class="form-control" placeholder="App ID" />
-        <input @bind="newServiceName" class="form-control" placeholder="Service Name" />
-        <button type="button" @onclick="CreateService" class="btn btn-primary" style="white-space:nowrap">Add Service</button>
-    </div>
+        <div style="margin-top:32px;margin-bottom:16px;display:flex;flex-direction:row;gap:6px;">
+            <input @bind="newServiceAppId" class="form-control" placeholder="App ID" />
+            <input @bind="newServiceName" class="form-control" placeholder="Service Name" />
+            <button type="button" @onclick="CreateService" class="btn btn-primary" style="white-space:nowrap">Add Service</button>
+        </div>
 
-    <table class="table table-bordered">
-        <thead>
-            <tr>
-                <th style="min-width:200px">ID</th>
-                <th style="min-width:200px">Service Name</th>
-                <th style="min-width:200px">Last Heartbeat</th>
-            </tr>
-        </thead>
-        <tbody>
-            @if(services.Count > 0) {
-            @foreach (var service in services)
-            {
+        <table class="table table-bordered">
+            <thead>
                 <tr>
-                    <td>@service.AppId</td>
-                    <td>@service.Name</td>
-                    <td>@service.LastHeartbeatTime</td>
-                    <td><button @onclick="() => DeleteService(service)">Delete</button></td>
+                    <th style="min-width:200px">ID</th>
+                    <th style="min-width:200px">Service Name</th>
+                    <th style="min-width:200px">Last Heartbeat</th>
                 </tr>
+            </thead>
+            <tbody>
+                @if(services.Count > 0) {
+                    @foreach (var service in services)
+                    {
+                        <tr>
+                            <td>@service.AppId</td>
+                            <td>@service.Name</td>
+                            <td>@(service.LastHeartbeatTime == null ? "" : FormatTime(service.LastHeartbeatTime.Value))</td>
+                            <td><button @onclick="() => DeleteService(service)">Delete</button></td>
+                        </tr>
+                    }
                 }
-            }
-            else
-            {
-                <tr><td colspan="3" style="padding:16px;">No monitored services. Use the form above to add one.</td></tr>
-            }
-        </tbody>
-    </table>
-</div>
+                else
+                {
+                    <tr><td colspan="3" style="padding:16px;">No monitored services. Use the form above to add one.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
 </div>
 
 @code {
     private HashSet<Service> services = [];
     private string? newServiceAppId;
     private string? newServiceName;
+    private string? _userTimezone = null;
 
     protected override void OnInitialized()
     {
@@ -60,7 +62,51 @@
 
         services = GetServices();
         logger.LogDebug("Services initialized");
+    }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) {
+            // Get user timezone using JSRuntime
+            string userTimeZone = await JSRuntime.InvokeAsync<string>("getUserTimeZone");
+            logger.LogInformation($"User's Timezone: {userTimeZone}");
+            _userTimezone = userTimeZone;
+
+            await InvokeAsync(StateHasChanged);
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    public string FormatTime(DateTime dateTime) {
+
+        if (string.IsNullOrEmpty(_userTimezone))
+        {
+            return dateTime.ToString("H:mm:ss zzz"); // Default format
+        }
+
+        var now = DateTimeOffset.Now;
+        var time = new DateTimeOffset(dateTime, TimeSpan.Zero);
+
+        try
+        {
+            var timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(_userTimezone);
+
+            var localTime = TimeZoneInfo.ConvertTime(time, timeZoneInfo);
+            var localTimeNow = TimeZoneInfo.ConvertTime(now, timeZoneInfo);
+
+            if (localTime.Date == localTimeNow.Date) {
+                return localTime.ToString("h:mm:ss tt");
+            }
+            else {
+                return localTime.ToString("d MMM yyyy, h:mm:ss tt");
+            }
+
+        }
+        catch
+        {
+            return dateTime.ToString("yyyy-MM-dd HH:mm:ss zzz"); // Fallback
+        }
     }
 
     private HashSet<Service> GetServices() {

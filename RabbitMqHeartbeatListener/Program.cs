@@ -1,3 +1,4 @@
+using Prometheus;
 using Microsoft.EntityFrameworkCore;
 using RabbitMqHeartbeatListener;
 using RabbitMqHeartbeatListener.Components;
@@ -32,6 +33,7 @@ services.AddSingleton(settings);
 
 services.AddHostedService<RabbitMqListenerService>();
 services.AddHostedService<RabbitMqHeartbeatPublisherService>();
+services.AddHostedService<RabbitMqHeartbeatMetricUpdateService>();
 
 // Add services to the container.
 services.AddRazorComponents()
@@ -44,7 +46,25 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    dbContext.Database.Migrate();
+    try
+    {
+        var dir = Path.GetDirectoryName(dbContext.DatabasePath);
+        if (dir is not null)
+        {
+            Directory.CreateDirectory(dir);
+        }
+
+        if (!File.Exists(dbContext.DatabasePath))
+        {
+            Console.WriteLine("Database file not found.");
+            //File.Create(dbContext.DatabasePath);
+        }
+        dbContext.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        var typeName = ex.GetType().Name;
+    }
 }
 
 // Configure the HTTP request pipeline.
@@ -58,6 +78,8 @@ if (!app.Environment.IsDevelopment())
 app.UsePathBase(settings.BasePath);
 
 app.UseHttpsRedirection();
+
+app.UseMetricServer();
 
 app.UseStaticFiles();
 app.UseAntiforgery();

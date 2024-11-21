@@ -1,6 +1,10 @@
 #See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
 
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS base
+# Install tzdata for timezone support
+RUN apk add --no-cache tzdata
+# Set a default timezone (optional)
+ENV TZ=Australia/Brisbane
 WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
@@ -21,6 +25,6 @@ RUN dotnet publish "./RabbitMqHeartbeatListener.csproj" -c $BUILD_CONFIGURATION 
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-RUN mkdir /data && chown -R app:app /data 
-USER app
+RUN mkdir /data && chown -R app:app /data && chmod 777 /data
+#USER app
 ENTRYPOINT ["dotnet", "RabbitMqHeartbeatListener.dll"]

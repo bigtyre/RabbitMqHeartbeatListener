@@ -66,7 +66,7 @@ namespace RabbitMqHeartbeatListener
                             catch (Exception ex)
                             {
                                 // Log the exception (logging framework preferred)
-                                logger.LogError($"Error processing heartbeat message: {ex.Message}");
+                                logger.LogError(ex, "Error processing heartbeat message: {errorMessage}", ex.Message);
                             }
                         };
 
@@ -86,10 +86,12 @@ namespace RabbitMqHeartbeatListener
                 }
             }, stoppingToken);
         }
+
         public override void Dispose()
         {
             _channel?.Close();
             base.Dispose();
+            GC.SuppressFinalize(this);
         }
     }
 }
